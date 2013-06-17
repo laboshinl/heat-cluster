@@ -100,6 +100,11 @@ cft.resources.add(Resource("RouterInternalInterface", 'OS::Quantum::RouterInterf
 )
 cft.resources["RouterInternalInterface"]["DependsOn"] = "RouterExternalInterface"
 
+nodenames=""
+
+for y in range(1,nodes_count+1):
+	nodenames=nodenames+str(ip_list[y*3])+"  node"+str(y)+"\n"
+
 for x in range(1,nodes_count+1):
 	cft.resources.add(Resource("port"+str(x), 'OS::Quantum::Port', 
 	{
@@ -139,6 +144,17 @@ for x in range(1,nodes_count+1):
 	runlist = "node"+str(x)+'json' if os.path.exists('node'+str(x)+'json') else "default.json" 
 	cft.resources["node"+str(x)]['Metadata'] = {"AWS::CloudFormation::Init" : {
         			"config" : {
+					"commands" : {
+					    "hosts" : {
+						"command" : "echo $'" + nodenames + "' >> /etc/hosts"
+					    },
+					    "hostname" : {
+						"command" : "hostname node" + str(x)
+					    },
+ 					    "hostname2" : {
+						"command" : "sed -ri 's#^HOSTNAME=.*#HOSTNAME=node" + str(x) + "#' /etc/sysconfig/network"
+					    }
+					},
 		        		"files" : {
 					      	"/root/.chef/knife.rb" : {
 							"content" : base64(open('knife.rb').read()),

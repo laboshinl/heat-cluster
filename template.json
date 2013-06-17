@@ -63,7 +63,7 @@
           "Ref": "Network"
         },
         "ip_version": 4,
-        "cidr": "10.42.156.0/24",
+        "cidr": "10.77.44.0/24",
         "value_specs": {
           "dns_nameservers": [
             "195.208.117.177"
@@ -108,7 +108,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.42.156.3"
+            "ip_address": "10.77.44.3"
           }
         ],
         "security_groups": [
@@ -171,7 +171,7 @@
             "files": {
               "/root/.chef/knife.rb": {
                 "content": {
-                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef-server.com:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
+                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef.stu.neva.ru:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
                 },
                 "owner": "root",
                 "group": "root",
@@ -218,6 +218,17 @@
                 "group": "root",
                 "mode": "000644"
               }
+            },
+            "commands": {
+              "hostname2": {
+                "command": "sed -ri 's#^HOSTNAME=.*#HOSTNAME=node1#' /etc/sysconfig/network"
+              },
+              "hostname": {
+                "command": "hostname node1"
+              },
+              "hosts": {
+                "command": "echo $'10.77.44.3  node1\n10.77.44.6  node2\n10.77.44.9  node3\n' >> /etc/hosts"
+              }
             }
           }
         }
@@ -234,7 +245,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.42.156.6"
+            "ip_address": "10.77.44.6"
           }
         ],
         "security_groups": [
@@ -277,7 +288,7 @@
             "files": {
               "/root/.chef/knife.rb": {
                 "content": {
-                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef-server.com:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
+                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef.stu.neva.ru:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
                 },
                 "owner": "root",
                 "group": "root",
@@ -324,6 +335,17 @@
                 "group": "root",
                 "mode": "000644"
               }
+            },
+            "commands": {
+              "hostname2": {
+                "command": "sed -ri 's#^HOSTNAME=.*#HOSTNAME=node2#' /etc/sysconfig/network"
+              },
+              "hostname": {
+                "command": "hostname node2"
+              },
+              "hosts": {
+                "command": "echo $'10.77.44.3  node1\n10.77.44.6  node2\n10.77.44.9  node3\n' >> /etc/hosts"
+              }
             }
           }
         }
@@ -340,7 +362,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.42.156.9"
+            "ip_address": "10.77.44.9"
           }
         ],
         "security_groups": [
@@ -383,7 +405,7 @@
             "files": {
               "/root/.chef/knife.rb": {
                 "content": {
-                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef-server.com:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
+                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef.stu.neva.ru:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
                 },
                 "owner": "root",
                 "group": "root",
@@ -429,6 +451,17 @@
                 "owner": "root",
                 "group": "root",
                 "mode": "000644"
+              }
+            },
+            "commands": {
+              "hostname2": {
+                "command": "sed -ri 's#^HOSTNAME=.*#HOSTNAME=node3#' /etc/sysconfig/network"
+              },
+              "hostname": {
+                "command": "hostname node3"
+              },
+              "hosts": {
+                "command": "echo $'10.77.44.3  node1\n10.77.44.6  node2\n10.77.44.9  node3\n' >> /etc/hosts"
               }
             }
           }
