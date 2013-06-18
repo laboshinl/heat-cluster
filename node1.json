@@ -1,5 +1,7 @@
 {
         "run_list":[
-                "recipe[java]"
+                "recipe[selinux::disabled]",
+		"recipe[ambari::server]"
                 ]
+	
 }

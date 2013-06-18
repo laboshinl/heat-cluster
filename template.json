@@ -63,7 +63,7 @@
           "Ref": "Network"
         },
         "ip_version": 4,
-        "cidr": "10.77.44.0/24",
+        "cidr": "10.62.77.0/24",
         "value_specs": {
           "dns_nameservers": [
             "195.208.117.177"
@@ -108,7 +108,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.77.44.3"
+            "ip_address": "10.62.77.3"
           }
         ],
         "security_groups": [
@@ -147,7 +147,7 @@
       "Properties": {
         "UserData": {
           "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $(curl http://169.254.169.254/openstack/latest/meta_data.json | python -c 'import json,sys;obj=json.load(sys.stdin);print obj[\"uuid\"]') &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
+            "Fn::Base64": "#!/bin/bash -v\nNAME=$(curl http://169.254.169.254/latest/meta-data/instance-id)\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $NAME &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
           }
         },
         "NetworkInterfaces": [
@@ -187,23 +187,9 @@
               },
               "/root/.chef/runlist.json": {
                 "content": {
-                  "admin": {
-                    "password": "superSecret",
-                    "email": "admin@cloud.com"
-                  },
-                  "controller": {
-                    "public_ip": "192.168.0.100",
-                    "private_ip": "10.0.0.1"
-                  },
                   "run_list": [
-                    "recipe[grizzly::set_attributes]",
-                    "recipe[grizzly::ip_forwarding]",
-                    "recipe[grizzly::users]",
-                    "recipe[grizzly::ntp-compute]",
-                    "recipe[grizzly::repositories]",
-                    "recipe[grizzly::openvswitch]",
-                    "recipe[grizzly::libvirt]",
-                    "recipe[grizzly::nova-compute]"
+                    "recipe[selinux::disabled]",
+                    "recipe[ambari::server]"
                   ]
                 },
                 "owner": "root",
@@ -227,7 +213,7 @@
                 "command": "hostname node1"
               },
               "hosts": {
-                "command": "echo $'10.77.44.3  node1\n10.77.44.6  node2\n10.77.44.9  node3\n' >> /etc/hosts"
+                "command": "echo $'10.62.77.3  node1\n10.62.77.6  node2\n10.62.77.9  node3\n' >> /etc/hosts"
               }
             }
           }
@@ -245,7 +231,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.77.44.6"
+            "ip_address": "10.62.77.6"
           }
         ],
         "security_groups": [
@@ -264,7 +250,7 @@
       "Properties": {
         "UserData": {
           "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $(curl http://169.254.169.254/openstack/latest/meta_data.json | python -c 'import json,sys;obj=json.load(sys.stdin);print obj[\"uuid\"]') &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
+            "Fn::Base64": "#!/bin/bash -v\nNAME=$(curl http://169.254.169.254/latest/meta-data/instance-id)\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $NAME &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
           }
         },
         "NetworkInterfaces": [
@@ -304,23 +290,10 @@
               },
               "/root/.chef/runlist.json": {
                 "content": {
-                  "admin": {
-                    "password": "superSecret",
-                    "email": "admin@cloud.com"
-                  },
-                  "controller": {
-                    "public_ip": "192.168.0.100",
-                    "private_ip": "10.0.0.1"
-                  },
                   "run_list": [
-                    "recipe[grizzly::set_attributes]",
-                    "recipe[grizzly::ip_forwarding]",
-                    "recipe[grizzly::users]",
-                    "recipe[grizzly::ntp-compute]",
-                    "recipe[grizzly::repositories]",
-                    "recipe[grizzly::openvswitch]",
-                    "recipe[grizzly::libvirt]",
-                    "recipe[grizzly::nova-compute]"
+                    "recipe[selinux::disabled]",
+                    "recipe[ambari::iptables]",
+                    "recipe[ambari::agent]"
                   ]
                 },
                 "owner": "root",
@@ -344,7 +317,7 @@
                 "command": "hostname node2"
               },
               "hosts": {
-                "command": "echo $'10.77.44.3  node1\n10.77.44.6  node2\n10.77.44.9  node3\n' >> /etc/hosts"
+                "command": "echo $'10.62.77.3  node1\n10.62.77.6  node2\n10.62.77.9  node3\n' >> /etc/hosts"
               }
             }
           }
@@ -362,7 +335,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.77.44.9"
+            "ip_address": "10.62.77.9"
           }
         ],
         "security_groups": [
@@ -381,7 +354,7 @@
       "Properties": {
         "UserData": {
           "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $(curl http://169.254.169.254/openstack/latest/meta_data.json | python -c 'import json,sys;obj=json.load(sys.stdin);print obj[\"uuid\"]') &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
+            "Fn::Base64": "#!/bin/bash -v\nNAME=$(curl http://169.254.169.254/latest/meta-data/instance-id)\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $NAME &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
           }
         },
         "NetworkInterfaces": [
@@ -421,23 +394,10 @@
               },
               "/root/.chef/runlist.json": {
                 "content": {
-                  "admin": {
-                    "password": "superSecret",
-                    "email": "admin@cloud.com"
-                  },
-                  "controller": {
-                    "public_ip": "192.168.0.100",
-                    "private_ip": "10.0.0.1"
-                  },
                   "run_list": [
-                    "recipe[grizzly::set_attributes]",
-                    "recipe[grizzly::ip_forwarding]",
-                    "recipe[grizzly::users]",
-                    "recipe[grizzly::ntp-compute]",
-                    "recipe[grizzly::repositories]",
-                    "recipe[grizzly::openvswitch]",
-                    "recipe[grizzly::libvirt]",
-                    "recipe[grizzly::nova-compute]"
+                    "recipe[selinux::disabled]",
+                    "recipe[ambari::iptables]",
+                    "recipe[ambari::agent]"
                   ]
                 },
                 "owner": "root",
@@ -461,7 +421,7 @@
                 "command": "hostname node3"
               },
               "hosts": {
-                "command": "echo $'10.77.44.3  node1\n10.77.44.6  node2\n10.77.44.9  node3\n' >> /etc/hosts"
+                "command": "echo $'10.62.77.3  node1\n10.62.77.6  node2\n10.62.77.9  node3\n' >> /etc/hosts"
               }
             }
           }

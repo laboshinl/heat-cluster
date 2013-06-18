@@ -1,20 +1,7 @@
 {
-        "admin": {
-                  "password": "superSecret",
-                  "email": "admin@cloud.com"
-                },
-        "controller":{
-                  "private_ip": "10.0.0.1",
-                  "public_ip": "192.168.0.100"
-                },
         "run_list":[
-                "recipe[grizzly::set_attributes]",
-                "recipe[grizzly::ip_forwarding]",
-                "recipe[grizzly::users]",
-                "recipe[grizzly::ntp-compute]",
-                "recipe[grizzly::repositories]",
-                "recipe[grizzly::openvswitch]",
-                "recipe[grizzly::libvirt]",
-                "recipe[grizzly::nova-compute]"
+                "recipe[selinux::disabled]",
+		"recipe[ambari::iptables]",
+		"recipe[ambari::agent]"
                 ]
 }

@@ -141,7 +141,7 @@ for x in range(1,nodes_count+1):
 		'NetworkInterfaces': [{ "Ref" : "port"+str(x)}]
     	})
 	)
-	runlist = "node"+str(x)+'json' if os.path.exists('node'+str(x)+'json') else "default.json" 
+	runlist = "node"+str(x)+'.json' if os.path.exists('node'+str(x)+'.json') else "default.json" 
 	cft.resources["node"+str(x)]['Metadata'] = {"AWS::CloudFormation::Init" : {
         			"config" : {
 					"commands" : {
