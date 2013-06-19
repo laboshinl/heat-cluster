@@ -10,7 +10,7 @@ ext_net_uuid="97e728ea-23a0-4d20-a7b7-1406a5815015"
 nodes_count=3
 ##############################
 
-cft = CloudFormationTemplate(description="Template generated with cfn_py_generate")
+cft = CloudFormationTemplate(description=str(nodes_count)+"-nodes "+ image+" cluster.")
 
 #Randomly generate ip-address
 ip=IPNetwork(choice(["10."+str(randint(0,255))+".","172.16.","192.168."])+str(randint(0,255))+".0/24")
@@ -156,30 +156,24 @@ for x in range(1,nodes_count+1):
 					    }
 					},
 		        		"files" : {
-					      	"/root/.chef/knife.rb" : {
-							"content" : base64(open('knife.rb').read()),
+					      	"/etc/chef/client.rb" : {
+							"content" : base64(open('client.rb').read()),
 					        	"mode" : "000644",
 					        	"owner" : "root",
 					        	"group" : "root"
 					      	},
-					      	"/root/.chef/runlist.json": {
+					      	"/etc/chef/runlist.json": {
 					      		"content" : json.loads(open(runlist).read()),
 					        	"mode" : "000644",
 					        	"owner" : "root",
 					        	"group" : "root"
 					      	},
-					      	"/root/.chef/validation.pem" : {
+					      	"/etc/chef/validation.pem" : {
 				        		"content" : base64(open('validation.pem').read()),
 				        		"mode" : "000644",
 				        		"owner" : "root",
 				        		"group" : "root"
-				      		},	
-					      	"/root/.chef/heat.pem" : {
-				        		"content" : base64(open('heat.pem').read()),
-				        		"mode" : "000644",
-				        		"owner" : "root",
-				        		"group" : "root"
-	                			}
+				      		}
 	              			}	
         			}
         		}

@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Template generated with cfn_py_generate",
+  "Description": "3-nodes centos-heat-new cluster.",
   "Parameters": {
     "KeyName": {
       "Default": "u-can-get-it-in-swft",
@@ -63,7 +63,7 @@
           "Ref": "Network"
         },
         "ip_version": 4,
-        "cidr": "10.62.77.0/24",
+        "cidr": "10.119.105.0/24",
         "value_specs": {
           "dns_nameservers": [
             "195.208.117.177"
@@ -108,7 +108,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.62.77.3"
+            "ip_address": "10.119.105.3"
           }
         ],
         "security_groups": [
@@ -147,7 +147,7 @@
       "Properties": {
         "UserData": {
           "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\nNAME=$(curl http://169.254.169.254/latest/meta-data/instance-id)\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $NAME &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
+            "Fn::Base64": "#!/bin/bash -v\n# Installing Chef from RPM\nrpm -ivh https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\n# Starting cloudformation\n/opt/aws/bin/cfn-init\n# Retrieving chef-client name from metadata \necho \"node_name \\\"$(curl http://169.254.169.254/latest/meta-data/instance-id)\\\"\" >> /etc/chef/client.rb\n# Runing chef-client \n/usr/bin/chef-client -j /etc/chef/runlist.json &>/tmp/chef.log\n\n"
           }
         },
         "NetworkInterfaces": [
@@ -169,36 +169,28 @@
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
-              "/root/.chef/knife.rb": {
+              "/etc/chef/client.rb": {
                 "content": {
-                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef.stu.neva.ru:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
+                  "Fn::Base64": "log_level        :auto\nlog_location     STDOUT\nchef_server_url  \"http://chef-server.com:4000\"\nvalidation_client_name \"chef-validator\"\n"
                 },
                 "owner": "root",
                 "group": "root",
                 "mode": "000644"
               },
-              "/root/.chef/validation.pem": {
-                "content": {
-                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAyzZTYd0KL6056K9hiIoKtCWsQHNC32y2OEzpHT5ftFxjDi6f\nQzvv9iJmFd6miCT3VEBM7zzVH6XOnfS6cASPv+QiX6CkGRQB6Zl3ZmmzlDKswHAl\n9tVehJzQrVGPUh2mM/Xh/GfyhwMZHoXn3rtOy33AT15s+m7f9MGCwX10FNpf3Cng\nHCigKAke/Bw0oAZivkYLNjak7sHSuiNzjpFznSbbfhrFVpiByLKz+xPYxHM2iJXo\nUFrdt5RcgGTeQz0d1Sw2yZtJl3x7go+frDYHwigD2WAQer3B8G1Vu9Ke7NCMUu5R\nObafguChk3yMfCtj4GaTPZeh2lph6d3QzpvTkQIDAQABAoIBAG4VxP/8DZucXQWn\nlM+x8HB9BB56El0U+HXxfEuiUZhUgDjbmt2CZ9FP+zuXvWF9nRrgJo1nyBD38sFx\nJVqvrewHO3PQg3UueIbC44Lweh8rgJhTaM2Z8zUl+ooZ5+lVNIdriXwCF8l6LS5y\n3hS0JdBpFDgq8CCO1fYyqpIFU1BDsMZPLbMXL08mP5KX1vcr5ReY9BtXXpBl42AX\nCrbI5fiijH5hE6XvhzHM7r6lGVzzRR3O/oUHfGY8UdE7AkZpiCbaFwqPaFLokscT\naDsJ5AFjXfV3nzZp3dAg68FnCjuPqAxr+iLAusZppoGshkirMIMXfBkk3ASn+Tj4\nErSy8gECgYEA9xyHRwyf4YZtA+Exav5NAIDZih6W6nPy20h0I1r/bFPuGELM5ETd\nAIx7XQzqgKRzNrpToQu3s3K839qEqckdW60JPfUKGdTxuklZH7Y4JYnrqVM7syfy\nrrV+u4SsSVsvYOGfkb85JzAx9acAMlmlvQ7T/qwMKssoczyXzro9NXECgYEA0oWP\nk3wifMf5QyswSYFmWApfPvnC3ASmv0XxJAtsnTag/7yfjdnZO8IWnRmr9xrw1bHk\nMPysycrVDKBcY/h6UfpRfvVUQeDG7Dr6aUXgs6poGSG45FmVyz8JbUiSeaHatqwy\nZhq0Z3pUpafGcSDU1KA8vkjtMnmeAa1msG1+8CECgYBONnpes5E7KXgBvVoN2lV2\n7lFsVQhBRte8Li+MLTYhDGOUzDfbnCwzC0PUjM0AUIyi6tCjbXkEVDGRzLEmqCAh\nrx/4u0EqMescojCSR/N3djLf0hdYOjGmuI1XPsPlJ/ZT/LWrxNGLJMb7UJNQXG2H\n7FSPC9eCB/FSoAAQj4PmEQKBgB2RnuHzPJDUMaGKjmS0pSBWjJw2znTCvnz9IOqU\nJDRMuP5SiwKMh6OKFk0IjwvNH+iT7N4oj0hkkdoNKAzumJetFgdEBAqgvK/vdL6W\njwINPEPTZbnFD3IVr4hG+jPVVPf1ZbrLo20pVHxT/V5kYyBeRUngylgdluDbbyH2\nry6hAoGAbMy5CM6JBPE5XCCmS1q81W23IOkL23Ww6OL6DyjXdde7bS6oOErTpxVo\nO2/H/ofgDpYMTEIIyHBXJCzmd01OgK7HtkaBA5Q3IJSAw7LtTXCj8W4PrHU2EWeO\n9Xiqt/CsOkuzIHpKxjXwpwpJEO/UVKpvCDy6rYq0YRgSLYmnj1U=\n-----END RSA PRIVATE KEY-----\n\n"
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              },
-              "/root/.chef/runlist.json": {
+              "/etc/chef/runlist.json": {
                 "content": {
                   "run_list": [
                     "recipe[selinux::disabled]",
-                    "recipe[ambari::server]"
+                    "recipe[ambari::iptables]"
                   ]
                 },
                 "owner": "root",
                 "group": "root",
                 "mode": "000644"
               },
-              "/root/.chef/heat.pem": {
+              "/etc/chef/validation.pem": {
                 "content": {
-                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA754pUQW15udqT1qRA9l0ynhY7KHseXlDWPBSyko9jABHTuvk\nIIl7zg10WRjeRgQOqa0z1o0PpqtEeXQw7QEn2RBiq6zHLfr3nj2CiKEhO0fCBUJk\nVlRAJ1F9mlg87JBxtMm3Y555WOUUOwpW2Kyp7MLLUQ+ZFON0kflJbwTl0YB8TGJc\nFUqxbkh2folTz3am2m0yUi2P1cEYFUuHElzSIhWQqhXlOxMe6j6yK5XBfflOc5s4\nvv/nJDjY6YBUDIRAmX3cYoVRazi6yELWZ4/uqrMAmkN+DhE6mrL+WyOsqv1E9kUg\nDZXj1GwKxTTQxctB0+nYaCOTsdyj8buuUMLHYwIDAQABAoIBADlxYhhBVTUwnwS9\nAmy40c3EAhVgUA9i6alFm6NRHuYUHwQler/uFZb1FMJTOt3wFQ/KLNYvZOQgxL6V\nAzGeCE56Jh1fwzQbqQbvWf6lGhFbB4E5RFKJygNi/shkhN51Vjzv6p3gHNkZubrZ\npK423lma7SDWq20dhhGEgH0z4GBThTNQBPqWNonQPqbYAXHULt9bgJcsCpCi8Hfe\ngQYeLL3NCxexjQM1PYkd6Ng50OXPUiIztURfMMsXkVNeY7P3kAS+gs8vglp9gSiu\nnLfmW4SQ/PYTY7SBe5j4aM9842b85qFSR3pv9E4ay46NOYHMoX1Nin1q6VVHB1Ig\nyWrO6bECgYEA/G7eW1xkIWB1hR1zZqVaDPTXIIPYANxIEKZQ9E27+TS9pIc1LNGk\nrWznz9Reg56iGf4gvqVphGhprHn3JgWAiZD/LJBIkNrXgx+LqV94cgZKv1MxerII\nyMyWAtyzW46BMDqTRZ8HUE91JPLhOX8yxslc/VE+V9K3or9gzExArQsCgYEA8wDv\nluWocl2F5VHr1WCjeV1TuE5+uOOEH669KWpKFRo4tEia3xUJ/jfBYmlsDK+cbJFo\n0pOoMVMcxs8feja8efkvlc3dgM3ozuIwdtpR3NQshxkEVFgN2kK3GP0AaMXLQuQw\nBf2+jQiF6yC9A6HwdxlcezsLxiRjtjUsE6PxVgkCgYEAk/0XZK48kYiwPPLwFaw4\np8HeYNSKjK6XnRM0AJWV7tppl4wgs37QMU/YcvII2tbkJ6LhZYMp4hMoaJI0P1kY\naw3TWzfXIvz5PYj/4rLytL5Vkebe6hR3q+isxU7H45Qezrx4XGeH7SA4CApP2dpl\nVT71whigGPKS79mMkRjfDdMCgYEAtmX1cKZhkbZxUnfzNO6cxfQvayBALjdYbQ+U\nHQoTIVPVTD1TQi9gmNjw5xWKbNtD5poevDDpBl0ENJYzYmDDiCpqdV9Y692i6ecN\nyaiF2ePIqH82qLiPbUy2cqM1M2+D6mmtQlH8PZAwNRUVyyw6eqsmp7jiVY/q6FFx\nDCz6cUECgYBB3iwbbLEUxetXzVkbnVqMyXYJOzGVX4M+DPfXQE9tby5Ep7UmGlYJ\nZua8oZurWz1Tg4tLMkvJWh7czKeDyGeO01FFhe1zONNA3jrmq56N/gOe3XYHfJZV\nRZ4gRO95jU/BIigNScQf9ynJqva6e73dBL2Jjucc8xe8q0t0xGgpsw==\n-----END RSA PRIVATE KEY-----\n"
+                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAyzZTYd0KL6056K9hiIoKtCWsQHNC32y2OEzpHT5ftFxjDi6f\nQzvv9iJmFd6miCT3VEBM7zzVH6XOnfS6cASPv+QiX6CkGRQB6Zl3ZmmzlDKswHAl\n9tVehJzQrVGPUh2mM/Xh/GfyhwMZHoXn3rtOy33AT15s+m7f9MGCwX10FNpf3Cng\nHCigKAke/Bw0oAZivkYLNjak7sHSuiNzjpFznSbbfhrFVpiByLKz+xPYxHM2iJXo\nUFrdt5RcgGTeQz0d1Sw2yZtJl3x7go+frDYHwigD2WAQer3B8G1Vu9Ke7NCMUu5R\nObafguChk3yMfCtj4GaTPZeh2lph6d3QzpvTkQIDAQABAoIBAG4VxP/8DZucXQWn\nlM+x8HB9BB56El0U+HXxfEuiUZhUgDjbmt2CZ9FP+zuXvWF9nRrgJo1nyBD38sFx\nJVqvrewHO3PQg3UueIbC44Lweh8rgJhTaM2Z8zUl+ooZ5+lVNIdriXwCF8l6LS5y\n3hS0JdBpFDgq8CCO1fYyqpIFU1BDsMZPLbMXL08mP5KX1vcr5ReY9BtXXpBl42AX\nCrbI5fiijH5hE6XvhzHM7r6lGVzzRR3O/oUHfGY8UdE7AkZpiCbaFwqPaFLokscT\naDsJ5AFjXfV3nzZp3dAg68FnCjuPqAxr+iLAusZppoGshkirMIMXfBkk3ASn+Tj4\nErSy8gECgYEA9xyHRwyf4YZtA+Exav5NAIDZih6W6nPy20h0I1r/bFPuGELM5ETd\nAIx7XQzqgKRzNrpToQu3s3K839qEqckdW60JPfUKGdTxuklZH7Y4JYnrqVM7syfy\nrrV+u4SsSVsvYOGfkb85JzAx9acAMlmlvQ7T/qwMKssoczyXzro9NXECgYEA0oWP\nk3wifMf5QyswSYFmWApfPvnC3ASmv0XxJAtsnTag/7yfjdnZO8IWnRmr9xrw1bHk\nMPysycrVDKBcY/h6UfpRfvVUQeDG7Dr6aUXgs6poGSG45FmVyz8JbUiSeaHatqwy\nZhq0Z3pUpafGcSDU1KA8vkjtMnmeAa1msG1+8CECgYBONnpes5E7KXgBvVoN2lV2\n7lFsVQhBRte8Li+MLTYhDGOUzDfbnCwzC0PUjM0AUIyi6tCjbXkEVDGRzLEmqCAh\nrx/4u0EqMescojCSR/N3djLf0hdYOjGmuI1XPsPlJ/ZT/LWrxNGLJMb7UJNQXG2H\n7FSPC9eCB/FSoAAQj4PmEQKBgB2RnuHzPJDUMaGKjmS0pSBWjJw2znTCvnz9IOqU\nJDRMuP5SiwKMh6OKFk0IjwvNH+iT7N4oj0hkkdoNKAzumJetFgdEBAqgvK/vdL6W\njwINPEPTZbnFD3IVr4hG+jPVVPf1ZbrLo20pVHxT/V5kYyBeRUngylgdluDbbyH2\nry6hAoGAbMy5CM6JBPE5XCCmS1q81W23IOkL23Ww6OL6DyjXdde7bS6oOErTpxVo\nO2/H/ofgDpYMTEIIyHBXJCzmd01OgK7HtkaBA5Q3IJSAw7LtTXCj8W4PrHU2EWeO\n9Xiqt/CsOkuzIHpKxjXwpwpJEO/UVKpvCDy6rYq0YRgSLYmnj1U=\n-----END RSA PRIVATE KEY-----\n\n"
                 },
                 "owner": "root",
                 "group": "root",
@@ -213,7 +205,7 @@
                 "command": "hostname node1"
               },
               "hosts": {
-                "command": "echo $'10.62.77.3  node1\n10.62.77.6  node2\n10.62.77.9  node3\n' >> /etc/hosts"
+                "command": "echo $'10.119.105.3  node1\n10.119.105.6  node2\n10.119.105.9  node3\n' >> /etc/hosts"
               }
             }
           }
@@ -231,7 +223,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.62.77.6"
+            "ip_address": "10.119.105.6"
           }
         ],
         "security_groups": [
@@ -250,7 +242,7 @@
       "Properties": {
         "UserData": {
           "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\nNAME=$(curl http://169.254.169.254/latest/meta-data/instance-id)\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $NAME &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
+            "Fn::Base64": "#!/bin/bash -v\n# Installing Chef from RPM\nrpm -ivh https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\n# Starting cloudformation\n/opt/aws/bin/cfn-init\n# Retrieving chef-client name from metadata \necho \"node_name \\\"$(curl http://169.254.169.254/latest/meta-data/instance-id)\\\"\" >> /etc/chef/client.rb\n# Runing chef-client \n/usr/bin/chef-client -j /etc/chef/runlist.json &>/tmp/chef.log\n\n"
           }
         },
         "NetworkInterfaces": [
@@ -272,37 +264,28 @@
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
-              "/root/.chef/knife.rb": {
+              "/etc/chef/client.rb": {
                 "content": {
-                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef.stu.neva.ru:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
+                  "Fn::Base64": "log_level        :auto\nlog_location     STDOUT\nchef_server_url  \"http://chef-server.com:4000\"\nvalidation_client_name \"chef-validator\"\n"
                 },
                 "owner": "root",
                 "group": "root",
                 "mode": "000644"
               },
-              "/root/.chef/validation.pem": {
-                "content": {
-                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAyzZTYd0KL6056K9hiIoKtCWsQHNC32y2OEzpHT5ftFxjDi6f\nQzvv9iJmFd6miCT3VEBM7zzVH6XOnfS6cASPv+QiX6CkGRQB6Zl3ZmmzlDKswHAl\n9tVehJzQrVGPUh2mM/Xh/GfyhwMZHoXn3rtOy33AT15s+m7f9MGCwX10FNpf3Cng\nHCigKAke/Bw0oAZivkYLNjak7sHSuiNzjpFznSbbfhrFVpiByLKz+xPYxHM2iJXo\nUFrdt5RcgGTeQz0d1Sw2yZtJl3x7go+frDYHwigD2WAQer3B8G1Vu9Ke7NCMUu5R\nObafguChk3yMfCtj4GaTPZeh2lph6d3QzpvTkQIDAQABAoIBAG4VxP/8DZucXQWn\nlM+x8HB9BB56El0U+HXxfEuiUZhUgDjbmt2CZ9FP+zuXvWF9nRrgJo1nyBD38sFx\nJVqvrewHO3PQg3UueIbC44Lweh8rgJhTaM2Z8zUl+ooZ5+lVNIdriXwCF8l6LS5y\n3hS0JdBpFDgq8CCO1fYyqpIFU1BDsMZPLbMXL08mP5KX1vcr5ReY9BtXXpBl42AX\nCrbI5fiijH5hE6XvhzHM7r6lGVzzRR3O/oUHfGY8UdE7AkZpiCbaFwqPaFLokscT\naDsJ5AFjXfV3nzZp3dAg68FnCjuPqAxr+iLAusZppoGshkirMIMXfBkk3ASn+Tj4\nErSy8gECgYEA9xyHRwyf4YZtA+Exav5NAIDZih6W6nPy20h0I1r/bFPuGELM5ETd\nAIx7XQzqgKRzNrpToQu3s3K839qEqckdW60JPfUKGdTxuklZH7Y4JYnrqVM7syfy\nrrV+u4SsSVsvYOGfkb85JzAx9acAMlmlvQ7T/qwMKssoczyXzro9NXECgYEA0oWP\nk3wifMf5QyswSYFmWApfPvnC3ASmv0XxJAtsnTag/7yfjdnZO8IWnRmr9xrw1bHk\nMPysycrVDKBcY/h6UfpRfvVUQeDG7Dr6aUXgs6poGSG45FmVyz8JbUiSeaHatqwy\nZhq0Z3pUpafGcSDU1KA8vkjtMnmeAa1msG1+8CECgYBONnpes5E7KXgBvVoN2lV2\n7lFsVQhBRte8Li+MLTYhDGOUzDfbnCwzC0PUjM0AUIyi6tCjbXkEVDGRzLEmqCAh\nrx/4u0EqMescojCSR/N3djLf0hdYOjGmuI1XPsPlJ/ZT/LWrxNGLJMb7UJNQXG2H\n7FSPC9eCB/FSoAAQj4PmEQKBgB2RnuHzPJDUMaGKjmS0pSBWjJw2znTCvnz9IOqU\nJDRMuP5SiwKMh6OKFk0IjwvNH+iT7N4oj0hkkdoNKAzumJetFgdEBAqgvK/vdL6W\njwINPEPTZbnFD3IVr4hG+jPVVPf1ZbrLo20pVHxT/V5kYyBeRUngylgdluDbbyH2\nry6hAoGAbMy5CM6JBPE5XCCmS1q81W23IOkL23Ww6OL6DyjXdde7bS6oOErTpxVo\nO2/H/ofgDpYMTEIIyHBXJCzmd01OgK7HtkaBA5Q3IJSAw7LtTXCj8W4PrHU2EWeO\n9Xiqt/CsOkuzIHpKxjXwpwpJEO/UVKpvCDy6rYq0YRgSLYmnj1U=\n-----END RSA PRIVATE KEY-----\n\n"
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              },
-              "/root/.chef/runlist.json": {
+              "/etc/chef/runlist.json": {
                 "content": {
                   "run_list": [
                     "recipe[selinux::disabled]",
-                    "recipe[ambari::iptables]",
-                    "recipe[ambari::agent]"
+                    "recipe[ambari::iptables]"
                   ]
                 },
                 "owner": "root",
                 "group": "root",
                 "mode": "000644"
               },
-              "/root/.chef/heat.pem": {
+              "/etc/chef/validation.pem": {
                 "content": {
-                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA754pUQW15udqT1qRA9l0ynhY7KHseXlDWPBSyko9jABHTuvk\nIIl7zg10WRjeRgQOqa0z1o0PpqtEeXQw7QEn2RBiq6zHLfr3nj2CiKEhO0fCBUJk\nVlRAJ1F9mlg87JBxtMm3Y555WOUUOwpW2Kyp7MLLUQ+ZFON0kflJbwTl0YB8TGJc\nFUqxbkh2folTz3am2m0yUi2P1cEYFUuHElzSIhWQqhXlOxMe6j6yK5XBfflOc5s4\nvv/nJDjY6YBUDIRAmX3cYoVRazi6yELWZ4/uqrMAmkN+DhE6mrL+WyOsqv1E9kUg\nDZXj1GwKxTTQxctB0+nYaCOTsdyj8buuUMLHYwIDAQABAoIBADlxYhhBVTUwnwS9\nAmy40c3EAhVgUA9i6alFm6NRHuYUHwQler/uFZb1FMJTOt3wFQ/KLNYvZOQgxL6V\nAzGeCE56Jh1fwzQbqQbvWf6lGhFbB4E5RFKJygNi/shkhN51Vjzv6p3gHNkZubrZ\npK423lma7SDWq20dhhGEgH0z4GBThTNQBPqWNonQPqbYAXHULt9bgJcsCpCi8Hfe\ngQYeLL3NCxexjQM1PYkd6Ng50OXPUiIztURfMMsXkVNeY7P3kAS+gs8vglp9gSiu\nnLfmW4SQ/PYTY7SBe5j4aM9842b85qFSR3pv9E4ay46NOYHMoX1Nin1q6VVHB1Ig\nyWrO6bECgYEA/G7eW1xkIWB1hR1zZqVaDPTXIIPYANxIEKZQ9E27+TS9pIc1LNGk\nrWznz9Reg56iGf4gvqVphGhprHn3JgWAiZD/LJBIkNrXgx+LqV94cgZKv1MxerII\nyMyWAtyzW46BMDqTRZ8HUE91JPLhOX8yxslc/VE+V9K3or9gzExArQsCgYEA8wDv\nluWocl2F5VHr1WCjeV1TuE5+uOOEH669KWpKFRo4tEia3xUJ/jfBYmlsDK+cbJFo\n0pOoMVMcxs8feja8efkvlc3dgM3ozuIwdtpR3NQshxkEVFgN2kK3GP0AaMXLQuQw\nBf2+jQiF6yC9A6HwdxlcezsLxiRjtjUsE6PxVgkCgYEAk/0XZK48kYiwPPLwFaw4\np8HeYNSKjK6XnRM0AJWV7tppl4wgs37QMU/YcvII2tbkJ6LhZYMp4hMoaJI0P1kY\naw3TWzfXIvz5PYj/4rLytL5Vkebe6hR3q+isxU7H45Qezrx4XGeH7SA4CApP2dpl\nVT71whigGPKS79mMkRjfDdMCgYEAtmX1cKZhkbZxUnfzNO6cxfQvayBALjdYbQ+U\nHQoTIVPVTD1TQi9gmNjw5xWKbNtD5poevDDpBl0ENJYzYmDDiCpqdV9Y692i6ecN\nyaiF2ePIqH82qLiPbUy2cqM1M2+D6mmtQlH8PZAwNRUVyyw6eqsmp7jiVY/q6FFx\nDCz6cUECgYBB3iwbbLEUxetXzVkbnVqMyXYJOzGVX4M+DPfXQE9tby5Ep7UmGlYJ\nZua8oZurWz1Tg4tLMkvJWh7czKeDyGeO01FFhe1zONNA3jrmq56N/gOe3XYHfJZV\nRZ4gRO95jU/BIigNScQf9ynJqva6e73dBL2Jjucc8xe8q0t0xGgpsw==\n-----END RSA PRIVATE KEY-----\n"
+                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAyzZTYd0KL6056K9hiIoKtCWsQHNC32y2OEzpHT5ftFxjDi6f\nQzvv9iJmFd6miCT3VEBM7zzVH6XOnfS6cASPv+QiX6CkGRQB6Zl3ZmmzlDKswHAl\n9tVehJzQrVGPUh2mM/Xh/GfyhwMZHoXn3rtOy33AT15s+m7f9MGCwX10FNpf3Cng\nHCigKAke/Bw0oAZivkYLNjak7sHSuiNzjpFznSbbfhrFVpiByLKz+xPYxHM2iJXo\nUFrdt5RcgGTeQz0d1Sw2yZtJl3x7go+frDYHwigD2WAQer3B8G1Vu9Ke7NCMUu5R\nObafguChk3yMfCtj4GaTPZeh2lph6d3QzpvTkQIDAQABAoIBAG4VxP/8DZucXQWn\nlM+x8HB9BB56El0U+HXxfEuiUZhUgDjbmt2CZ9FP+zuXvWF9nRrgJo1nyBD38sFx\nJVqvrewHO3PQg3UueIbC44Lweh8rgJhTaM2Z8zUl+ooZ5+lVNIdriXwCF8l6LS5y\n3hS0JdBpFDgq8CCO1fYyqpIFU1BDsMZPLbMXL08mP5KX1vcr5ReY9BtXXpBl42AX\nCrbI5fiijH5hE6XvhzHM7r6lGVzzRR3O/oUHfGY8UdE7AkZpiCbaFwqPaFLokscT\naDsJ5AFjXfV3nzZp3dAg68FnCjuPqAxr+iLAusZppoGshkirMIMXfBkk3ASn+Tj4\nErSy8gECgYEA9xyHRwyf4YZtA+Exav5NAIDZih6W6nPy20h0I1r/bFPuGELM5ETd\nAIx7XQzqgKRzNrpToQu3s3K839qEqckdW60JPfUKGdTxuklZH7Y4JYnrqVM7syfy\nrrV+u4SsSVsvYOGfkb85JzAx9acAMlmlvQ7T/qwMKssoczyXzro9NXECgYEA0oWP\nk3wifMf5QyswSYFmWApfPvnC3ASmv0XxJAtsnTag/7yfjdnZO8IWnRmr9xrw1bHk\nMPysycrVDKBcY/h6UfpRfvVUQeDG7Dr6aUXgs6poGSG45FmVyz8JbUiSeaHatqwy\nZhq0Z3pUpafGcSDU1KA8vkjtMnmeAa1msG1+8CECgYBONnpes5E7KXgBvVoN2lV2\n7lFsVQhBRte8Li+MLTYhDGOUzDfbnCwzC0PUjM0AUIyi6tCjbXkEVDGRzLEmqCAh\nrx/4u0EqMescojCSR/N3djLf0hdYOjGmuI1XPsPlJ/ZT/LWrxNGLJMb7UJNQXG2H\n7FSPC9eCB/FSoAAQj4PmEQKBgB2RnuHzPJDUMaGKjmS0pSBWjJw2znTCvnz9IOqU\nJDRMuP5SiwKMh6OKFk0IjwvNH+iT7N4oj0hkkdoNKAzumJetFgdEBAqgvK/vdL6W\njwINPEPTZbnFD3IVr4hG+jPVVPf1ZbrLo20pVHxT/V5kYyBeRUngylgdluDbbyH2\nry6hAoGAbMy5CM6JBPE5XCCmS1q81W23IOkL23Ww6OL6DyjXdde7bS6oOErTpxVo\nO2/H/ofgDpYMTEIIyHBXJCzmd01OgK7HtkaBA5Q3IJSAw7LtTXCj8W4PrHU2EWeO\n9Xiqt/CsOkuzIHpKxjXwpwpJEO/UVKpvCDy6rYq0YRgSLYmnj1U=\n-----END RSA PRIVATE KEY-----\n\n"
                 },
                 "owner": "root",
                 "group": "root",
@@ -317,7 +300,7 @@
                 "command": "hostname node2"
               },
               "hosts": {
-                "command": "echo $'10.62.77.3  node1\n10.62.77.6  node2\n10.62.77.9  node3\n' >> /etc/hosts"
+                "command": "echo $'10.119.105.3  node1\n10.119.105.6  node2\n10.119.105.9  node3\n' >> /etc/hosts"
               }
             }
           }
@@ -335,7 +318,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.62.77.9"
+            "ip_address": "10.119.105.9"
           }
         ],
         "security_groups": [
@@ -354,7 +337,7 @@
       "Properties": {
         "UserData": {
           "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\nNAME=$(curl http://169.254.169.254/latest/meta-data/instance-id)\nsource /root/bash_profile\nexport HOME=/root\nmkdir /root/.chef/\n/opt/aws/bin/cfn-init\nwget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\nrpm -ivh chef-11.4.0-1.el6.x86_64.rpm\nssh-keygen -t rsa -N '' -f /root/.ssh/id_rsa\ncat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys\nuntil [ -e /usr/bin/knife ] ; do sleep 1; done\n/usr/bin/knife bootstrap -c /root/.chef/knife.rb -i /root/.ssh/id_rsa localhost -N $NAME &>/tmp/knife.log\n/usr/bin/chef-client -c /etc/chef/client.rb -j /root/.chef/runlist.json &>/tmp/chef.log\n\n"
+            "Fn::Base64": "#!/bin/bash -v\n# Installing Chef from RPM\nrpm -ivh https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\n# Starting cloudformation\n/opt/aws/bin/cfn-init\n# Retrieving chef-client name from metadata \necho \"node_name \\\"$(curl http://169.254.169.254/latest/meta-data/instance-id)\\\"\" >> /etc/chef/client.rb\n# Runing chef-client \n/usr/bin/chef-client -j /etc/chef/runlist.json &>/tmp/chef.log\n\n"
           }
         },
         "NetworkInterfaces": [
@@ -376,37 +359,28 @@
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
-              "/root/.chef/knife.rb": {
+              "/etc/chef/client.rb": {
                 "content": {
-                  "Fn::Base64": "log_level                :info\nlog_location             STDOUT\nnode_name               \"heat\"\nclient_key              \"/root/.chef/heat.pem\"\nvalidation_client_name  \"chef-validator\"\nvalidation_key          \"/root/.chef/validation.pem\"\nchef_server_url         \"http://chef.stu.neva.ru:4000\"\nsyntax_check_cache_path \"/root/.chef/syntax_check_cache\"\n"
+                  "Fn::Base64": "log_level        :auto\nlog_location     STDOUT\nchef_server_url  \"http://chef-server.com:4000\"\nvalidation_client_name \"chef-validator\"\n"
                 },
                 "owner": "root",
                 "group": "root",
                 "mode": "000644"
               },
-              "/root/.chef/validation.pem": {
-                "content": {
-                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAyzZTYd0KL6056K9hiIoKtCWsQHNC32y2OEzpHT5ftFxjDi6f\nQzvv9iJmFd6miCT3VEBM7zzVH6XOnfS6cASPv+QiX6CkGRQB6Zl3ZmmzlDKswHAl\n9tVehJzQrVGPUh2mM/Xh/GfyhwMZHoXn3rtOy33AT15s+m7f9MGCwX10FNpf3Cng\nHCigKAke/Bw0oAZivkYLNjak7sHSuiNzjpFznSbbfhrFVpiByLKz+xPYxHM2iJXo\nUFrdt5RcgGTeQz0d1Sw2yZtJl3x7go+frDYHwigD2WAQer3B8G1Vu9Ke7NCMUu5R\nObafguChk3yMfCtj4GaTPZeh2lph6d3QzpvTkQIDAQABAoIBAG4VxP/8DZucXQWn\nlM+x8HB9BB56El0U+HXxfEuiUZhUgDjbmt2CZ9FP+zuXvWF9nRrgJo1nyBD38sFx\nJVqvrewHO3PQg3UueIbC44Lweh8rgJhTaM2Z8zUl+ooZ5+lVNIdriXwCF8l6LS5y\n3hS0JdBpFDgq8CCO1fYyqpIFU1BDsMZPLbMXL08mP5KX1vcr5ReY9BtXXpBl42AX\nCrbI5fiijH5hE6XvhzHM7r6lGVzzRR3O/oUHfGY8UdE7AkZpiCbaFwqPaFLokscT\naDsJ5AFjXfV3nzZp3dAg68FnCjuPqAxr+iLAusZppoGshkirMIMXfBkk3ASn+Tj4\nErSy8gECgYEA9xyHRwyf4YZtA+Exav5NAIDZih6W6nPy20h0I1r/bFPuGELM5ETd\nAIx7XQzqgKRzNrpToQu3s3K839qEqckdW60JPfUKGdTxuklZH7Y4JYnrqVM7syfy\nrrV+u4SsSVsvYOGfkb85JzAx9acAMlmlvQ7T/qwMKssoczyXzro9NXECgYEA0oWP\nk3wifMf5QyswSYFmWApfPvnC3ASmv0XxJAtsnTag/7yfjdnZO8IWnRmr9xrw1bHk\nMPysycrVDKBcY/h6UfpRfvVUQeDG7Dr6aUXgs6poGSG45FmVyz8JbUiSeaHatqwy\nZhq0Z3pUpafGcSDU1KA8vkjtMnmeAa1msG1+8CECgYBONnpes5E7KXgBvVoN2lV2\n7lFsVQhBRte8Li+MLTYhDGOUzDfbnCwzC0PUjM0AUIyi6tCjbXkEVDGRzLEmqCAh\nrx/4u0EqMescojCSR/N3djLf0hdYOjGmuI1XPsPlJ/ZT/LWrxNGLJMb7UJNQXG2H\n7FSPC9eCB/FSoAAQj4PmEQKBgB2RnuHzPJDUMaGKjmS0pSBWjJw2znTCvnz9IOqU\nJDRMuP5SiwKMh6OKFk0IjwvNH+iT7N4oj0hkkdoNKAzumJetFgdEBAqgvK/vdL6W\njwINPEPTZbnFD3IVr4hG+jPVVPf1ZbrLo20pVHxT/V5kYyBeRUngylgdluDbbyH2\nry6hAoGAbMy5CM6JBPE5XCCmS1q81W23IOkL23Ww6OL6DyjXdde7bS6oOErTpxVo\nO2/H/ofgDpYMTEIIyHBXJCzmd01OgK7HtkaBA5Q3IJSAw7LtTXCj8W4PrHU2EWeO\n9Xiqt/CsOkuzIHpKxjXwpwpJEO/UVKpvCDy6rYq0YRgSLYmnj1U=\n-----END RSA PRIVATE KEY-----\n\n"
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              },
-              "/root/.chef/runlist.json": {
+              "/etc/chef/runlist.json": {
                 "content": {
                   "run_list": [
                     "recipe[selinux::disabled]",
-                    "recipe[ambari::iptables]",
-                    "recipe[ambari::agent]"
+                    "recipe[ambari::iptables]"
                   ]
                 },
                 "owner": "root",
                 "group": "root",
                 "mode": "000644"
               },
-              "/root/.chef/heat.pem": {
+              "/etc/chef/validation.pem": {
                 "content": {
-                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA754pUQW15udqT1qRA9l0ynhY7KHseXlDWPBSyko9jABHTuvk\nIIl7zg10WRjeRgQOqa0z1o0PpqtEeXQw7QEn2RBiq6zHLfr3nj2CiKEhO0fCBUJk\nVlRAJ1F9mlg87JBxtMm3Y555WOUUOwpW2Kyp7MLLUQ+ZFON0kflJbwTl0YB8TGJc\nFUqxbkh2folTz3am2m0yUi2P1cEYFUuHElzSIhWQqhXlOxMe6j6yK5XBfflOc5s4\nvv/nJDjY6YBUDIRAmX3cYoVRazi6yELWZ4/uqrMAmkN+DhE6mrL+WyOsqv1E9kUg\nDZXj1GwKxTTQxctB0+nYaCOTsdyj8buuUMLHYwIDAQABAoIBADlxYhhBVTUwnwS9\nAmy40c3EAhVgUA9i6alFm6NRHuYUHwQler/uFZb1FMJTOt3wFQ/KLNYvZOQgxL6V\nAzGeCE56Jh1fwzQbqQbvWf6lGhFbB4E5RFKJygNi/shkhN51Vjzv6p3gHNkZubrZ\npK423lma7SDWq20dhhGEgH0z4GBThTNQBPqWNonQPqbYAXHULt9bgJcsCpCi8Hfe\ngQYeLL3NCxexjQM1PYkd6Ng50OXPUiIztURfMMsXkVNeY7P3kAS+gs8vglp9gSiu\nnLfmW4SQ/PYTY7SBe5j4aM9842b85qFSR3pv9E4ay46NOYHMoX1Nin1q6VVHB1Ig\nyWrO6bECgYEA/G7eW1xkIWB1hR1zZqVaDPTXIIPYANxIEKZQ9E27+TS9pIc1LNGk\nrWznz9Reg56iGf4gvqVphGhprHn3JgWAiZD/LJBIkNrXgx+LqV94cgZKv1MxerII\nyMyWAtyzW46BMDqTRZ8HUE91JPLhOX8yxslc/VE+V9K3or9gzExArQsCgYEA8wDv\nluWocl2F5VHr1WCjeV1TuE5+uOOEH669KWpKFRo4tEia3xUJ/jfBYmlsDK+cbJFo\n0pOoMVMcxs8feja8efkvlc3dgM3ozuIwdtpR3NQshxkEVFgN2kK3GP0AaMXLQuQw\nBf2+jQiF6yC9A6HwdxlcezsLxiRjtjUsE6PxVgkCgYEAk/0XZK48kYiwPPLwFaw4\np8HeYNSKjK6XnRM0AJWV7tppl4wgs37QMU/YcvII2tbkJ6LhZYMp4hMoaJI0P1kY\naw3TWzfXIvz5PYj/4rLytL5Vkebe6hR3q+isxU7H45Qezrx4XGeH7SA4CApP2dpl\nVT71whigGPKS79mMkRjfDdMCgYEAtmX1cKZhkbZxUnfzNO6cxfQvayBALjdYbQ+U\nHQoTIVPVTD1TQi9gmNjw5xWKbNtD5poevDDpBl0ENJYzYmDDiCpqdV9Y692i6ecN\nyaiF2ePIqH82qLiPbUy2cqM1M2+D6mmtQlH8PZAwNRUVyyw6eqsmp7jiVY/q6FFx\nDCz6cUECgYBB3iwbbLEUxetXzVkbnVqMyXYJOzGVX4M+DPfXQE9tby5Ep7UmGlYJ\nZua8oZurWz1Tg4tLMkvJWh7czKeDyGeO01FFhe1zONNA3jrmq56N/gOe3XYHfJZV\nRZ4gRO95jU/BIigNScQf9ynJqva6e73dBL2Jjucc8xe8q0t0xGgpsw==\n-----END RSA PRIVATE KEY-----\n"
+                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAyzZTYd0KL6056K9hiIoKtCWsQHNC32y2OEzpHT5ftFxjDi6f\nQzvv9iJmFd6miCT3VEBM7zzVH6XOnfS6cASPv+QiX6CkGRQB6Zl3ZmmzlDKswHAl\n9tVehJzQrVGPUh2mM/Xh/GfyhwMZHoXn3rtOy33AT15s+m7f9MGCwX10FNpf3Cng\nHCigKAke/Bw0oAZivkYLNjak7sHSuiNzjpFznSbbfhrFVpiByLKz+xPYxHM2iJXo\nUFrdt5RcgGTeQz0d1Sw2yZtJl3x7go+frDYHwigD2WAQer3B8G1Vu9Ke7NCMUu5R\nObafguChk3yMfCtj4GaTPZeh2lph6d3QzpvTkQIDAQABAoIBAG4VxP/8DZucXQWn\nlM+x8HB9BB56El0U+HXxfEuiUZhUgDjbmt2CZ9FP+zuXvWF9nRrgJo1nyBD38sFx\nJVqvrewHO3PQg3UueIbC44Lweh8rgJhTaM2Z8zUl+ooZ5+lVNIdriXwCF8l6LS5y\n3hS0JdBpFDgq8CCO1fYyqpIFU1BDsMZPLbMXL08mP5KX1vcr5ReY9BtXXpBl42AX\nCrbI5fiijH5hE6XvhzHM7r6lGVzzRR3O/oUHfGY8UdE7AkZpiCbaFwqPaFLokscT\naDsJ5AFjXfV3nzZp3dAg68FnCjuPqAxr+iLAusZppoGshkirMIMXfBkk3ASn+Tj4\nErSy8gECgYEA9xyHRwyf4YZtA+Exav5NAIDZih6W6nPy20h0I1r/bFPuGELM5ETd\nAIx7XQzqgKRzNrpToQu3s3K839qEqckdW60JPfUKGdTxuklZH7Y4JYnrqVM7syfy\nrrV+u4SsSVsvYOGfkb85JzAx9acAMlmlvQ7T/qwMKssoczyXzro9NXECgYEA0oWP\nk3wifMf5QyswSYFmWApfPvnC3ASmv0XxJAtsnTag/7yfjdnZO8IWnRmr9xrw1bHk\nMPysycrVDKBcY/h6UfpRfvVUQeDG7Dr6aUXgs6poGSG45FmVyz8JbUiSeaHatqwy\nZhq0Z3pUpafGcSDU1KA8vkjtMnmeAa1msG1+8CECgYBONnpes5E7KXgBvVoN2lV2\n7lFsVQhBRte8Li+MLTYhDGOUzDfbnCwzC0PUjM0AUIyi6tCjbXkEVDGRzLEmqCAh\nrx/4u0EqMescojCSR/N3djLf0hdYOjGmuI1XPsPlJ/ZT/LWrxNGLJMb7UJNQXG2H\n7FSPC9eCB/FSoAAQj4PmEQKBgB2RnuHzPJDUMaGKjmS0pSBWjJw2znTCvnz9IOqU\nJDRMuP5SiwKMh6OKFk0IjwvNH+iT7N4oj0hkkdoNKAzumJetFgdEBAqgvK/vdL6W\njwINPEPTZbnFD3IVr4hG+jPVVPf1ZbrLo20pVHxT/V5kYyBeRUngylgdluDbbyH2\nry6hAoGAbMy5CM6JBPE5XCCmS1q81W23IOkL23Ww6OL6DyjXdde7bS6oOErTpxVo\nO2/H/ofgDpYMTEIIyHBXJCzmd01OgK7HtkaBA5Q3IJSAw7LtTXCj8W4PrHU2EWeO\n9Xiqt/CsOkuzIHpKxjXwpwpJEO/UVKpvCDy6rYq0YRgSLYmnj1U=\n-----END RSA PRIVATE KEY-----\n\n"
                 },
                 "owner": "root",
                 "group": "root",
@@ -421,7 +395,7 @@
                 "command": "hostname node3"
               },
               "hosts": {
-                "command": "echo $'10.62.77.3  node1\n10.62.77.6  node2\n10.62.77.9  node3\n' >> /etc/hosts"
+                "command": "echo $'10.119.105.3  node1\n10.119.105.6  node2\n10.119.105.9  node3\n' >> /etc/hosts"
               }
             }
           }

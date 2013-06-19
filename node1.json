@@ -1,7 +1,7 @@
 {
         "run_list":[
                 "recipe[selinux::disabled]",
-		"recipe[ambari::server]"
+		"recipe[ambari::iptables]"
                 ]
 	
 }
