@@ -21,11 +21,6 @@
       "Default": "97e728ea-23a0-4d20-a7b7-1406a5815015",
       "Type": "String",
       "Description": "UUID of the external network to be used for external access"
-    },
-    "Router": {
-      "Default": "40282410-66a0-48dc-b12b-e0c1b5a4b145",
-      "Type": "String",
-      "Description": "Existing router ID"
     }
   },
   "Resources": {
@@ -68,11 +63,25 @@
           "Ref": "Network"
         },
         "ip_version": 4,
-        "cidr": "10.142.56.0/24",
+        "cidr": "192.168.8.0/24",
         "value_specs": {
           "dns_nameservers": [
             "195.208.117.177"
           ]
+        }
+      }
+    },
+    "Router": {
+      "Type": "OS::Quantum::Router"
+    },
+    "RouterExternalInterface": {
+      "Type": "OS::Quantum::RouterGateway",
+      "Properties": {
+        "router_id": {
+          "Ref": "Router"
+        },
+        "network_id": {
+          "Ref": "ExtNetUuid"
         }
       }
     },
@@ -85,7 +94,8 @@
         "subnet_id": {
           "Ref": "Subnet"
         }
-      }
+      },
+      "DependsOn": "RouterExternalInterface"
     },
     "port1": {
       "Type": "OS::Quantum::Port",
@@ -98,7 +108,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.142.56.3"
+            "ip_address": "192.168.8.3"
           }
         ],
         "security_groups": [
@@ -130,7 +140,7 @@
           "Ref": "port1"
         }
       },
-      "DependsOn": "port1"
+      "DependsOn": "RouterInternalInterface"
     },
     "node1": {
       "Type": "AWS::EC2::Instance",
@@ -195,7 +205,7 @@
                 "command": "hostname node1"
               },
               "hosts": {
-                "command": "echo $'10.142.56.3  node1\n' >> /etc/hosts"
+                "command": "echo $'192.168.8.3  node1\n' >> /etc/hosts"
               }
             }
           }
