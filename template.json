@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "3-nodes centos-heat-new cluster.",
+  "Description": "1-nodes centos-heat-new cluster.",
   "Parameters": {
     "KeyName": {
       "Default": "u-can-get-it-in-swft",
@@ -21,6 +21,11 @@
       "Default": "97e728ea-23a0-4d20-a7b7-1406a5815015",
       "Type": "String",
       "Description": "UUID of the external network to be used for external access"
+    },
+    "Router": {
+      "Default": "40282410-66a0-48dc-b12b-e0c1b5a4b145",
+      "Type": "String",
+      "Description": "Existing router ID"
     }
   },
   "Resources": {
@@ -63,25 +68,11 @@
           "Ref": "Network"
         },
         "ip_version": 4,
-        "cidr": "10.119.105.0/24",
+        "cidr": "10.244.46.0/24",
         "value_specs": {
           "dns_nameservers": [
             "195.208.117.177"
           ]
-        }
-      }
-    },
-    "Router": {
-      "Type": "OS::Quantum::Router"
-    },
-    "RouterExternalInterface": {
-      "Type": "OS::Quantum::RouterGateway",
-      "Properties": {
-        "router_id": {
-          "Ref": "Router"
-        },
-        "network_id": {
-          "Ref": "ExtNetUuid"
         }
       }
     },
@@ -94,8 +85,7 @@
         "subnet_id": {
           "Ref": "Subnet"
         }
-      },
-      "DependsOn": "RouterExternalInterface"
+      }
     },
     "port1": {
       "Type": "OS::Quantum::Port",
@@ -108,7 +98,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "10.119.105.3"
+            "ip_address": "10.244.46.3"
           }
         ],
         "security_groups": [
@@ -140,14 +130,14 @@
           "Ref": "port1"
         }
       },
-      "DependsOn": "RouterInternalInterface"
+      "DependsOn": "port1"
     },
     "node1": {
       "Type": "AWS::EC2::Instance",
       "Properties": {
         "UserData": {
           "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\n# Installing Chef from RPM\nrpm -ivh https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\n# Starting cloudformation\n/opt/aws/bin/cfn-init\n# Retrieving chef-client name from metadata \necho \"node_name \\\"$(curl http://169.254.169.254/latest/meta-data/instance-id)\\\"\" >> /etc/chef/client.rb\n# Runing chef-client \n/usr/bin/chef-client -j /etc/chef/runlist.json &>/tmp/chef.log\n\n"
+            "Fn::Base64": "#!/bin/bash -v\necho -e \"\\nInstalling chef...\" > /dev/kmsg\nrpm -ivh http://xenlet.stu.neva.ru/chef-11.4.0-1.el6.x86_64.rpm &> /dev/kmsg\n/opt/aws/bin/cfn-init\n# Retrieving chef-client name from metadata \necho \"node_name \\\"$(curl http://169.254.169.254/latest/meta-data/instance-id)\\\"\" >> /etc/chef/client.rb\n# Runing chef-client\necho \"Running chef-recipes...\" > /dev/kmsg \n/usr/bin/chef-client -j /etc/chef/runlist.json &> /dev/kmsg\n\n"
           }
         },
         "NetworkInterfaces": [
@@ -171,7 +161,7 @@
             "files": {
               "/etc/chef/client.rb": {
                 "content": {
-                  "Fn::Base64": "log_level        :auto\nlog_location     STDOUT\nchef_server_url  \"http://chef-server.com:4000\"\nvalidation_client_name \"chef-validator\"\n"
+                  "Fn::Base64": "log_level        :auto\nlog_location     STDOUT\nchef_server_url  \"http://chef.stu.neva.ru:4000\"\nvalidation_client_name \"chef-validator\"\n"
                 },
                 "owner": "root",
                 "group": "root",
@@ -205,197 +195,7 @@
                 "command": "hostname node1"
               },
               "hosts": {
-                "command": "echo $'10.119.105.3  node1\n10.119.105.6  node2\n10.119.105.9  node3\n' >> /etc/hosts"
-              }
-            }
-          }
-        }
-      }
-    },
-    "port2": {
-      "Type": "OS::Quantum::Port",
-      "Properties": {
-        "network_id": {
-          "Ref": "Network"
-        },
-        "fixed_ips": [
-          {
-            "subnet_id": {
-              "Ref": "Subnet"
-            },
-            "ip_address": "10.119.105.6"
-          }
-        ],
-        "security_groups": [
-          {
-            "Fn::GetAtt": [
-              "AllowAllSecurityGroup",
-              "ID"
-            ]
-          }
-        ]
-      },
-      "DependsOn": "AllowAllSecurityGroup"
-    },
-    "node2": {
-      "Type": "AWS::EC2::Instance",
-      "Properties": {
-        "UserData": {
-          "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\n# Installing Chef from RPM\nrpm -ivh https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\n# Starting cloudformation\n/opt/aws/bin/cfn-init\n# Retrieving chef-client name from metadata \necho \"node_name \\\"$(curl http://169.254.169.254/latest/meta-data/instance-id)\\\"\" >> /etc/chef/client.rb\n# Runing chef-client \n/usr/bin/chef-client -j /etc/chef/runlist.json &>/tmp/chef.log\n\n"
-          }
-        },
-        "NetworkInterfaces": [
-          {
-            "Ref": "port2"
-          }
-        ],
-        "KeyName": {
-          "Ref": "KeyName"
-        },
-        "InstanceType": {
-          "Ref": "Flavor"
-        },
-        "ImageId": {
-          "Ref": "ImageName"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Init": {
-          "config": {
-            "files": {
-              "/etc/chef/client.rb": {
-                "content": {
-                  "Fn::Base64": "log_level        :auto\nlog_location     STDOUT\nchef_server_url  \"http://chef-server.com:4000\"\nvalidation_client_name \"chef-validator\"\n"
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              },
-              "/etc/chef/runlist.json": {
-                "content": {
-                  "run_list": [
-                    "recipe[selinux::disabled]",
-                    "recipe[ambari::iptables]"
-                  ]
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              },
-              "/etc/chef/validation.pem": {
-                "content": {
-                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAyzZTYd0KL6056K9hiIoKtCWsQHNC32y2OEzpHT5ftFxjDi6f\nQzvv9iJmFd6miCT3VEBM7zzVH6XOnfS6cASPv+QiX6CkGRQB6Zl3ZmmzlDKswHAl\n9tVehJzQrVGPUh2mM/Xh/GfyhwMZHoXn3rtOy33AT15s+m7f9MGCwX10FNpf3Cng\nHCigKAke/Bw0oAZivkYLNjak7sHSuiNzjpFznSbbfhrFVpiByLKz+xPYxHM2iJXo\nUFrdt5RcgGTeQz0d1Sw2yZtJl3x7go+frDYHwigD2WAQer3B8G1Vu9Ke7NCMUu5R\nObafguChk3yMfCtj4GaTPZeh2lph6d3QzpvTkQIDAQABAoIBAG4VxP/8DZucXQWn\nlM+x8HB9BB56El0U+HXxfEuiUZhUgDjbmt2CZ9FP+zuXvWF9nRrgJo1nyBD38sFx\nJVqvrewHO3PQg3UueIbC44Lweh8rgJhTaM2Z8zUl+ooZ5+lVNIdriXwCF8l6LS5y\n3hS0JdBpFDgq8CCO1fYyqpIFU1BDsMZPLbMXL08mP5KX1vcr5ReY9BtXXpBl42AX\nCrbI5fiijH5hE6XvhzHM7r6lGVzzRR3O/oUHfGY8UdE7AkZpiCbaFwqPaFLokscT\naDsJ5AFjXfV3nzZp3dAg68FnCjuPqAxr+iLAusZppoGshkirMIMXfBkk3ASn+Tj4\nErSy8gECgYEA9xyHRwyf4YZtA+Exav5NAIDZih6W6nPy20h0I1r/bFPuGELM5ETd\nAIx7XQzqgKRzNrpToQu3s3K839qEqckdW60JPfUKGdTxuklZH7Y4JYnrqVM7syfy\nrrV+u4SsSVsvYOGfkb85JzAx9acAMlmlvQ7T/qwMKssoczyXzro9NXECgYEA0oWP\nk3wifMf5QyswSYFmWApfPvnC3ASmv0XxJAtsnTag/7yfjdnZO8IWnRmr9xrw1bHk\nMPysycrVDKBcY/h6UfpRfvVUQeDG7Dr6aUXgs6poGSG45FmVyz8JbUiSeaHatqwy\nZhq0Z3pUpafGcSDU1KA8vkjtMnmeAa1msG1+8CECgYBONnpes5E7KXgBvVoN2lV2\n7lFsVQhBRte8Li+MLTYhDGOUzDfbnCwzC0PUjM0AUIyi6tCjbXkEVDGRzLEmqCAh\nrx/4u0EqMescojCSR/N3djLf0hdYOjGmuI1XPsPlJ/ZT/LWrxNGLJMb7UJNQXG2H\n7FSPC9eCB/FSoAAQj4PmEQKBgB2RnuHzPJDUMaGKjmS0pSBWjJw2znTCvnz9IOqU\nJDRMuP5SiwKMh6OKFk0IjwvNH+iT7N4oj0hkkdoNKAzumJetFgdEBAqgvK/vdL6W\njwINPEPTZbnFD3IVr4hG+jPVVPf1ZbrLo20pVHxT/V5kYyBeRUngylgdluDbbyH2\nry6hAoGAbMy5CM6JBPE5XCCmS1q81W23IOkL23Ww6OL6DyjXdde7bS6oOErTpxVo\nO2/H/ofgDpYMTEIIyHBXJCzmd01OgK7HtkaBA5Q3IJSAw7LtTXCj8W4PrHU2EWeO\n9Xiqt/CsOkuzIHpKxjXwpwpJEO/UVKpvCDy6rYq0YRgSLYmnj1U=\n-----END RSA PRIVATE KEY-----\n\n"
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              }
-            },
-            "commands": {
-              "hostname2": {
-                "command": "sed -ri 's#^HOSTNAME=.*#HOSTNAME=node2#' /etc/sysconfig/network"
-              },
-              "hostname": {
-                "command": "hostname node2"
-              },
-              "hosts": {
-                "command": "echo $'10.119.105.3  node1\n10.119.105.6  node2\n10.119.105.9  node3\n' >> /etc/hosts"
-              }
-            }
-          }
-        }
-      }
-    },
-    "port3": {
-      "Type": "OS::Quantum::Port",
-      "Properties": {
-        "network_id": {
-          "Ref": "Network"
-        },
-        "fixed_ips": [
-          {
-            "subnet_id": {
-              "Ref": "Subnet"
-            },
-            "ip_address": "10.119.105.9"
-          }
-        ],
-        "security_groups": [
-          {
-            "Fn::GetAtt": [
-              "AllowAllSecurityGroup",
-              "ID"
-            ]
-          }
-        ]
-      },
-      "DependsOn": "AllowAllSecurityGroup"
-    },
-    "node3": {
-      "Type": "AWS::EC2::Instance",
-      "Properties": {
-        "UserData": {
-          "Fn::Base64": {
-            "Fn::Base64": "#!/bin/bash -v\n# Installing Chef from RPM\nrpm -ivh https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.4.0-1.el6.x86_64.rpm\n# Starting cloudformation\n/opt/aws/bin/cfn-init\n# Retrieving chef-client name from metadata \necho \"node_name \\\"$(curl http://169.254.169.254/latest/meta-data/instance-id)\\\"\" >> /etc/chef/client.rb\n# Runing chef-client \n/usr/bin/chef-client -j /etc/chef/runlist.json &>/tmp/chef.log\n\n"
-          }
-        },
-        "NetworkInterfaces": [
-          {
-            "Ref": "port3"
-          }
-        ],
-        "KeyName": {
-          "Ref": "KeyName"
-        },
-        "InstanceType": {
-          "Ref": "Flavor"
-        },
-        "ImageId": {
-          "Ref": "ImageName"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Init": {
-          "config": {
-            "files": {
-              "/etc/chef/client.rb": {
-                "content": {
-                  "Fn::Base64": "log_level        :auto\nlog_location     STDOUT\nchef_server_url  \"http://chef-server.com:4000\"\nvalidation_client_name \"chef-validator\"\n"
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              },
-              "/etc/chef/runlist.json": {
-                "content": {
-                  "run_list": [
-                    "recipe[selinux::disabled]",
-                    "recipe[ambari::iptables]"
-                  ]
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              },
-              "/etc/chef/validation.pem": {
-                "content": {
-                  "Fn::Base64": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAyzZTYd0KL6056K9hiIoKtCWsQHNC32y2OEzpHT5ftFxjDi6f\nQzvv9iJmFd6miCT3VEBM7zzVH6XOnfS6cASPv+QiX6CkGRQB6Zl3ZmmzlDKswHAl\n9tVehJzQrVGPUh2mM/Xh/GfyhwMZHoXn3rtOy33AT15s+m7f9MGCwX10FNpf3Cng\nHCigKAke/Bw0oAZivkYLNjak7sHSuiNzjpFznSbbfhrFVpiByLKz+xPYxHM2iJXo\nUFrdt5RcgGTeQz0d1Sw2yZtJl3x7go+frDYHwigD2WAQer3B8G1Vu9Ke7NCMUu5R\nObafguChk3yMfCtj4GaTPZeh2lph6d3QzpvTkQIDAQABAoIBAG4VxP/8DZucXQWn\nlM+x8HB9BB56El0U+HXxfEuiUZhUgDjbmt2CZ9FP+zuXvWF9nRrgJo1nyBD38sFx\nJVqvrewHO3PQg3UueIbC44Lweh8rgJhTaM2Z8zUl+ooZ5+lVNIdriXwCF8l6LS5y\n3hS0JdBpFDgq8CCO1fYyqpIFU1BDsMZPLbMXL08mP5KX1vcr5ReY9BtXXpBl42AX\nCrbI5fiijH5hE6XvhzHM7r6lGVzzRR3O/oUHfGY8UdE7AkZpiCbaFwqPaFLokscT\naDsJ5AFjXfV3nzZp3dAg68FnCjuPqAxr+iLAusZppoGshkirMIMXfBkk3ASn+Tj4\nErSy8gECgYEA9xyHRwyf4YZtA+Exav5NAIDZih6W6nPy20h0I1r/bFPuGELM5ETd\nAIx7XQzqgKRzNrpToQu3s3K839qEqckdW60JPfUKGdTxuklZH7Y4JYnrqVM7syfy\nrrV+u4SsSVsvYOGfkb85JzAx9acAMlmlvQ7T/qwMKssoczyXzro9NXECgYEA0oWP\nk3wifMf5QyswSYFmWApfPvnC3ASmv0XxJAtsnTag/7yfjdnZO8IWnRmr9xrw1bHk\nMPysycrVDKBcY/h6UfpRfvVUQeDG7Dr6aUXgs6poGSG45FmVyz8JbUiSeaHatqwy\nZhq0Z3pUpafGcSDU1KA8vkjtMnmeAa1msG1+8CECgYBONnpes5E7KXgBvVoN2lV2\n7lFsVQhBRte8Li+MLTYhDGOUzDfbnCwzC0PUjM0AUIyi6tCjbXkEVDGRzLEmqCAh\nrx/4u0EqMescojCSR/N3djLf0hdYOjGmuI1XPsPlJ/ZT/LWrxNGLJMb7UJNQXG2H\n7FSPC9eCB/FSoAAQj4PmEQKBgB2RnuHzPJDUMaGKjmS0pSBWjJw2znTCvnz9IOqU\nJDRMuP5SiwKMh6OKFk0IjwvNH+iT7N4oj0hkkdoNKAzumJetFgdEBAqgvK/vdL6W\njwINPEPTZbnFD3IVr4hG+jPVVPf1ZbrLo20pVHxT/V5kYyBeRUngylgdluDbbyH2\nry6hAoGAbMy5CM6JBPE5XCCmS1q81W23IOkL23Ww6OL6DyjXdde7bS6oOErTpxVo\nO2/H/ofgDpYMTEIIyHBXJCzmd01OgK7HtkaBA5Q3IJSAw7LtTXCj8W4PrHU2EWeO\n9Xiqt/CsOkuzIHpKxjXwpwpJEO/UVKpvCDy6rYq0YRgSLYmnj1U=\n-----END RSA PRIVATE KEY-----\n\n"
-                },
-                "owner": "root",
-                "group": "root",
-                "mode": "000644"
-              }
-            },
-            "commands": {
-              "hostname2": {
-                "command": "sed -ri 's#^HOSTNAME=.*#HOSTNAME=node3#' /etc/sysconfig/network"
-              },
-              "hostname": {
-                "command": "hostname node3"
-              },
-              "hosts": {
-                "command": "echo $'10.119.105.3  node1\n10.119.105.6  node2\n10.119.105.9  node3\n' >> /etc/hosts"
+                "command": "echo $'10.244.46.3  node1\n' >> /etc/hosts"
               }
             }
           }

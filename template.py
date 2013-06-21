@@ -6,8 +6,13 @@ from random import randint, choice
 keypair="u-can-get-it-in-swft"
 flavor="m1.small"
 image="centos-heat-new"
+
 ext_net_uuid="97e728ea-23a0-4d20-a7b7-1406a5815015"
-nodes_count=3
+create_new_router=False
+
+existing_router_uuid="40282410-66a0-48dc-b12b-e0c1b5a4b145"
+dns_nameserver="195.208.117.177"
+nodes_count=1
 ##############################
 
 cft = CloudFormationTemplate(description=str(nodes_count)+"-nodes "+ image+" cluster.")
@@ -75,30 +80,39 @@ cft.resources.add(Resource("Network", 'OS::Quantum::Net',
 )
 cft.resources.add(Resource("Subnet", 'OS::Quantum::Subnet',
     {
-       "network_id" : { "Ref" : "Network" },
+    "network_id" : { "Ref" : "Network" },
 	"ip_version" : 4,
 	"cidr" : str(ip),
 	"value_specs": {
-	"dns_nameservers": ["195.208.117.177"]
+	"dns_nameservers": [dns_nameserver]
 	}
     })
 )
 
-cft.resources.add(Resource("Router", 'OS::Quantum::Router'))
-
-cft.resources.add(Resource("RouterExternalInterface", 'OS::Quantum::RouterGateway',
+if create_new_router :
+	cft.resources.add(Resource("Router", 'OS::Quantum::Router'))
+	cft.resources.add(Resource("RouterExternalInterface", 'OS::Quantum::RouterGateway',
+	    {
+		"router_id" : { "Ref" : "Router"},
+		"network_id" : { "Ref" : "ExtNetUuid" }
+	    })
+	)
+else:
+	cft.parameters.add(Parameter('Router', 'String',
     {
-	"router_id" : { "Ref" : "Router"},
-	"network_id" : { "Ref" : "ExtNetUuid" }
+        'Description': 'Existing router ID',
+		'Default': existing_router_uuid
     })
-)
+	)
 cft.resources.add(Resource("RouterInternalInterface", 'OS::Quantum::RouterInterface',
     {
 	"router_id": { "Ref" : "Router" },
 	"subnet_id": { "Ref" : "Subnet" }
     })
-)
-cft.resources["RouterInternalInterface"]["DependsOn"] = "RouterExternalInterface"
+	)
+
+if create_new_router :
+	cft.resources["RouterInternalInterface"]["DependsOn"] = "RouterExternalInterface"
 
 nodenames=""
 
@@ -130,8 +144,8 @@ for x in range(1,nodes_count+1):
 		})
 		)
 		cft.resources["FloatingIpAssociate"+str(x)]["DependsOn"] = "port"+str(x)
-		cft.resources["FloatingIpAssociate"+str(x)]["DependsOn"] = "RouterInternalInterface"
-
+		if create_new_router :
+			cft.resources["FloatingIpAssociate"+str(x)]["DependsOn"] = "RouterInternalInterface"
 	cft.resources.add(Resource("node"+str(x), 'AWS::EC2::Instance',
     	{
         	'ImageId': { 'Ref' : 'ImageName' },
@@ -174,8 +188,8 @@ for x in range(1,nodes_count+1):
 				        		"owner" : "root",
 				        		"group" : "root"
 				      		}
-	              			}	
-        			}
+	              	}	
         		}
+        	}
 		}
 
