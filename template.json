@@ -63,7 +63,7 @@
           "Ref": "Network"
         },
         "ip_version": 4,
-        "cidr": "192.168.8.0/24",
+        "cidr": "10.67.109.0/24",
         "value_specs": {
           "dns_nameservers": [
             "195.208.117.177"
@@ -108,7 +108,7 @@
             "subnet_id": {
               "Ref": "Subnet"
             },
-            "ip_address": "192.168.8.3"
+            "ip_address": "10.67.109.3"
           }
         ],
         "security_groups": [
@@ -205,7 +205,7 @@
                 "command": "hostname node1"
               },
               "hosts": {
-                "command": "echo $'192.168.8.3  node1\n' >> /etc/hosts"
+                "command": "echo $'10.67.109.3 node1\n' >> /etc/hosts"
               }
             }
           }
